@@ -1,12 +1,12 @@
 /*
- * This example demonstrates using timers with encoder
+ * This example demonstrates using USART
  */
 
 #include "stm32f0xx_ll_rcc.h"
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_bus.h"
 #include "stm32f0xx_ll_gpio.h"
-#include "stm32f0xx_ll_tim.h"
+#include "stm32f0xx_ll_usart.h"
 
 /**
   * System Clock Configuration
@@ -61,63 +61,68 @@ static void gpio_config(void)
 }
 
 /*
- * Configure timer to encoder mode
+ * Initialize USART module and associated pins
  */
-static void timers_config(void)
+static void usart_config(void)
 {
+    /*
+     * Setting USART pins
+     */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_ALTERNATE);
-    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_ALTERNATE);
-    LL_GPIO_SetAFPin_0_7(GPIOA, LL_GPIO_PIN_1, LL_GPIO_AF_2);
-    LL_GPIO_SetAFPin_0_7(GPIOA, LL_GPIO_PIN_5, LL_GPIO_AF_2);
-    LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_1, LL_GPIO_PULL_UP);
-    LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_5, LL_GPIO_PULL_UP);
+    //USART1_TX
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetAFPin_8_15(GPIOA, LL_GPIO_PIN_9, LL_GPIO_AF_1);
+    LL_GPIO_SetPinSpeed(GPIOA, LL_GPIO_PIN_9, LL_GPIO_SPEED_FREQ_HIGH);
+    //USART1_RX
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_10, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetAFPin_8_15(GPIOA, LL_GPIO_PIN_10, LL_GPIO_AF_1);
+    LL_GPIO_SetPinSpeed(GPIOA, LL_GPIO_PIN_10, LL_GPIO_SPEED_FREQ_HIGH);
+    /*
+     * USART Set clock source
+     */
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_USART1);
+    LL_RCC_SetUSARTClockSource(LL_RCC_USART1_CLKSOURCE_PCLK1);
+    /*
+     * USART Setting
+     */
+    LL_USART_SetTransferDirection(USART1, LL_USART_DIRECTION_TX_RX);
+    LL_USART_SetParity(USART1, LL_USART_PARITY_NONE);
+    LL_USART_SetDataWidth(USART1, LL_USART_DATAWIDTH_8B);
+    LL_USART_SetStopBitsLength(USART1, LL_USART_STOPBITS_1);
+    LL_USART_SetTransferBitOrder(USART1, LL_USART_BITORDER_LSBFIRST);
+    LL_USART_SetBaudRate(USART1, SystemCoreClock,
+                         LL_USART_OVERSAMPLING_16, 115200);
+    LL_USART_EnableIT_IDLE(USART1);
+    LL_USART_EnableIT_RXNE(USART1);
+    /*
+     * USART turn on
+     */
+    LL_USART_Enable(USART1);
+    while (!(LL_USART_IsActiveFlag_TEACK(USART1) &&
+             LL_USART_IsActiveFlag_REACK(USART1)));
+    /*
+     * Turn on NVIC interrupt line
+     */
+    NVIC_SetPriority(USART1_IRQn, 0);
+    NVIC_EnableIRQ(USART1_IRQn);
+    return;
+}
 
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-    LL_TIM_SetEncoderMode(TIM2, LL_TIM_ENCODERMODE_X4_TI12);
-    LL_TIM_IC_SetPolarity(TIM2, LL_TIM_CHANNEL_CH1,
-                          LL_TIM_IC_POLARITY_FALLING);
-    LL_TIM_IC_SetPolarity(TIM2, LL_TIM_CHANNEL_CH2,
-                          LL_TIM_IC_POLARITY_FALLING);
-    //LL_TIM_IC_SetFilter(TIM2, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV16_N5);
-    //LL_TIM_IC_SetFilter(TIM2, LL_TIM_CHANNEL_CH2, LL_TIM_IC_FILTER_FDIV16_N5);
-    LL_TIM_SetAutoReload(TIM2, 0xFFFF);
-    LL_TIM_EnableCounter(TIM2);
-    //
+void USART1_IRQHandler(void)
+{
     return;
 }
 
 /*
- * Just set of commands to waste CPU power for a second
- * (basically it is a simple cycle with a predefined number
- * of loops)
- */
-static void delay(void)
-{
-    for (int i = 0; i < 10000; i++);
-}
-
-/*
- * Turn on Green led when turn encoder to the right
- * Turn on Blue led when turn encoder to the left
+ * Terminal
+ * Receive commands and do corresponding action
  */
 int main(void)
 {
     rcc_config();
     gpio_config();
-    timers_config();
+    usart_config();
 
-    while (1) {
-        if (LL_TIM_GetCounterMode(TIM2) == LL_TIM_COUNTERMODE_UP) {
-            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_8);
-            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_9);
-        }
-        if (LL_TIM_GetCounterMode(TIM2) == LL_TIM_COUNTERMODE_DOWN) {
-            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_9);
-            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
-        }
-        delay();
-    }
-
+    while (1);
     return 0;
 }
