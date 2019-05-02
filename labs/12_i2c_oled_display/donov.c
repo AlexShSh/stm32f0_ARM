@@ -1,5 +1,5 @@
 /*
- * This array contains photo of Donov
+ * This array contains grayscale photo of Donov
  */
 const unsigned char donov[128 * 64] = {
   196, 195, 193, 191, 189, 187, 185, 184, 184, 183, 182, 181, 180, 179, 177,
