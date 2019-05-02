@@ -75,6 +75,17 @@ static void printf_config(void)
 /*
  * Init all periphs and print out something
  */
+
+
+void oled_draw_rect(int x1, int y1, int x2, int y2, enum color_t color)
+{
+    for (int x = x1; x <= x2; x++)
+        for (int y = y1; y <= y2; y++)
+            oled_set_pix(x, y, color);
+}
+
+extern unsigned char donov[];
+
 int main(void)
 {
     rcc_config();
@@ -82,12 +93,30 @@ int main(void)
     oled_config();
     printf_config();
 
-    xprintf("\n     Hello, world!\n\n");
-    xprintf("    This is an OLED\n");
-    xprintf("   display based on\n");
-    xprintf("    SSD1306 driver");
+    //xprintf("\n     Hello, John!\n\n");
+    //xprintf("    Rom4ik the Fox\n");
+    //xprintf("    is in a linden\n");
+    //xprintf("    SSD1306 driver");
+
+    //oled_pic(donov, 85);
+
+    //oled_pic_dithering(donov);
+
+    oled_draw_rect(10, 10, 30, 30, clWhite);
+    oled_draw_rect(11, 11, 29, 29, clBlack);
+    oled_draw_rect(12, 12, 28, 28, clWhite);
+    oled_draw_rect(13, 13, 27, 27, clBlack);
+    oled_draw_rect(14, 14, 26, 26, clWhite);
+    oled_draw_rect(15, 15, 25, 25, clBlack);
+    oled_draw_rect(16, 16, 24, 24, clBlack);
+    oled_draw_rect(17, 17, 23, 23, clWhite);
+    oled_draw_rect(18, 18, 22, 22, clBlack);
+    oled_draw_rect(19, 19, 21, 21, clWhite);
+    oled_draw_rect(20, 20, 20, 20, clBlack);
+
     oled_update();
 
     while (1);
+
     return 0;
 }
